@@ -1,0 +1,2 @@
+# sqlservercodes
+SQLSERVER_CODES
