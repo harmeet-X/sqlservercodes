@@ -1,0 +1,211 @@
+Public sub EarnedLeave() 
+ 
+ if @JoinedYear@ < @LeaveYear@ THEN
+   
+      IF @CurrentMonth@ = 1 then 
+                IF @CarryForwardBalance@ >=30 then
+                    $Decimal_Output1=2.0 + 30
+                    $Decimal_Output2 =0
+                ELSE
+                         $Decimal_Output1=2.0 + @CarryForwardBalance@
+                        $Decimal_Output2 =0
+                END IF
+ELSEIF @CurrentMonth@=2 then
+         $Decimal_Output1 = (@CurrentMonth@ * 2.0)+@CarryForwardBalance@ 
+         $Decimal_Output2 = 0 
+      ELSEIF @CurrentMonth@=3 then
+         $Decimal_Output1 = (@CurrentMonth@ * 2.0)+@CarryForwardBalance@ 
+         $Decimal_Output2 = 0 
+      ELSEIF @CurrentMonth@=4 then
+         $Decimal_Output1 =  (@CurrentMonth@ * 2.0)+@CarryForwardBalance@ 
+         $Decimal_Output2 = 0 
+      ELSEIF @CurrentMonth@=5 then
+         $Decimal_Output1 =  (@CurrentMonth@ * 2.0)+@CarryForwardBalance@ 
+         $Decimal_Output2 = 0 
+       ELSEIF @CurrentMonth@=6 then
+         $Decimal_Output1 =  (@CurrentMonth@ * 2.0)+@CarryForwardBalance@ 
+         $Decimal_Output2 = 0 
+      ELSEIF @CurrentMonth@=7 then
+         $Decimal_Output1 =  (@CurrentMonth@ * 2.0)+@CarryForwardBalance@ 
+         $Decimal_Output2 = 0 
+      ELSEIF @CurrentMonth@=8 then
+         $Decimal_Output1 =  (@CurrentMonth@ * 2.0)+@CarryForwardBalance@  
+         $Decimal_Output2 = 0 
+      ELSEIF @CurrentMonth@=9 then
+         $Decimal_Output1 = (@CurrentMonth@ * 2.0)+@CarryForwardBalance@  
+         $Decimal_Output2 = 5
+      ELSEIF @CurrentMonth@=10 then
+         $Decimal_Output1 =  (@CurrentMonth@ * 2.0)+@CarryForwardBalance@ 
+         $Decimal_Output2 = 0 
+      ELSEIF @CurrentMonth@=11 then
+         $Decimal_Output1 =  (@CurrentMonth@ * 2.0)+@CarryForwardBalance@  
+         $Decimal_Output2 = 0 
+      ELSEIF @CurrentMonth@=12 then
+         $Decimal_Output1 =  (@CurrentMonth@ * 2.0)+@CarryForwardBalance@  
+         $Decimal_Output2 = 0 
+
+      ELSE
+         $Decimal_Output1 = 0
+         $Decimal_Output2 = 0
+      End If
+
+  ELSEIF  @JoinedYear@ = @LeaveYear@ THEN
+          If @JoinedMonth@ =1 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 =2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =2 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 =2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =3 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 =2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =4 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =5 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =6 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =7 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =8 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =9 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =10 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =11 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+If @JoinedMonth@ =12 then 
+               IF  @JoinedDate_DatePart@<=15 THEN 
+                   $Decimal_Output1 = 2.0
+                   $Decimal_Output2 = 0 
+                ElseIF  @JoinedDate_DatePart@>15 or @JoinedDate_DatePart@ < 20 THEN 
+                    $Decimal_Output1 = 1.0
+                    $Decimal_Output2 = 0 
+                Else
+                    $Decimal_Output1 = 0
+                    $Decimal_Output2 = 0
+                END IF
+             
+             END IF
+    END IF      
+   
+ END SUB   

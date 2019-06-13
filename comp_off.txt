@@ -1,0 +1,135 @@
+CREATE procedure [SP_COMP_OFF]                                       
+AS                                       
+                              
+begin                              
+DELETE FROM HS_HR_LEAVE_ERND_DETAIL                         
+WHERE LEAVE_ERND_UTILIZE=0 --and LEV_TYPE_CODE = '000005'                                        
+                              
+INSERT INTO HS_HR_LEAVE_ERND_DETAIL                        
+(EMP_NUMBER,                        
+LGY_YEAR_CODE,                        
+LEV_TYPE_CODE,                        
+LEAVE_ERND_DATE,                        
+LEAVE_ERND_ENTITLEMENT,                                       
+LEAVE_ERND_BALANCE,                        
+LEAVE_ERND_UTILIZE,                        
+LEAVE_ERND_ACTIVE)                                       
+              
+select EMP_NUMBER,                        
+LGY_YEAR_CODE,                        
+LEV_TYPE_CODE,                        
+LEAVE_ERND_DATE,              
+max(LEAVE_ERND_ENTITLEMENT) as LEAVE_ERND_ENTITLEMENT,              
+max(LEAVE_ERND_BALANCE ) as LEAVE_ERND_BALANCE,max(LEAVE_ERND_UTILIZE) as LEAVE_ERND_UTILIZE,                            
+max(LEAVE_ERND_ACTIVE) as LEAVE_ERND_ACTIVE   from (        
+--              
+select * From (                                  
+SELECT EMP_NUMBER,                        
+YEAR(DAT_INDATE) AS LGY_YEAR_CODE,                        
+'000004' AS LEV_TYPE_CODE,                        
+DAT_INDATE AS LEAVE_ERND_DATE,                                       
+case               
+when DAT_INOUT_DIFF_HRS <4.00 then 0                          
+when DAT_INOUT_DIFF_HRS >=4.00 and DAT_INOUT_DIFF_HRS <6.00 then 0.5                             
+when DAT_INOUT_DIFF_HRS>=6.00  then 1  end AS LEAVE_ERND_ENTITLEMENT,                            
+                            
+case                        
+when DAT_INOUT_DIFF_HRS <4.00 then 0                   
+when DAT_INOUT_DIFF_HRS >=4.00 and DAT_INOUT_DIFF_HRS <6.00 then .5                             
+when DAT_INOUT_DIFF_HRS>=6.00  then 1 end AS LEAVE_ERND_BALANCE,                            
+                            
+0 AS LEAVE_ERND_UTILIZE,                            
+1 AS LEAVE_ERND_ACTIVE                                       
+FROM HS_TA_DAILY_ATTENDANCE                                        
+WHERE SFT_CODE IN  (SELECT SFT_CODE                       
+                   FROM HS_TA_SHIFTDEF                         
+                   WHERE SFT_OFFSHIFT=1)       
+                   --days changed from 45 to 150 again change it to 45 after 5th may                                              
+and datediff(d,DAT_INDATE,getdate())<=45                                                  
+AND  DAT_INDATE>='2016-04-01' and              
+not EXISTS (              
+select * From HS_HR_LEAVE_ERND_DETAIL where EMP_NUMBER =HS_TA_DAILY_ATTENDANCE.EMP_NUMBER               
+ and LEAVE_ERND_DATE=HS_TA_DAILY_ATTENDANCE.DAT_INDATE  )                             
+and EMP_NUMBER in (select EMP_NUMBER                         
+                   from HS_HR_LEAVE_ENTITLE                         
+                   where LEV_TYPE_CODE='000004'                                     
+                   and LGY_YEAR_CODE=YEAR(getdate()))                                   
+   ) zz where zz.LEAVE_ERND_ENTITLEMENT>0                
+--  COMP-OFF in working day      
+       
+union all        
+                    
+select * From (                                  
+SELECT EMP_NUMBER,                        
+YEAR(DAT_INDATE) AS LGY_YEAR_CODE,                        
+'000004' AS LEV_TYPE_CODE,                        
+DAT_INDATE AS LEAVE_ERND_DATE,                                       
+case               
+when ISNULL(DAT_EOT_RT1_CAL,0)>=4 and ISNULL(DAT_EOT_RT1_CAL,0)<6 and  ISNULL(DAT_SOT_RT1_CAL,0)<4 then 0.5                          
+when ISNULL(DAT_EOT_RT1_CAL,0)<4 and ISNULL(DAT_SOT_RT1_CAL,0)>=4  and ISNULL(DAT_SOT_RT1_CAL,0)<6 then 0.5      
+when ISNULL(DAT_EOT_RT1_CAL,0)>=4 and ISNULL(DAT_EOT_RT1_CAL,0) <6 and ISNULL(DAT_SOT_RT1_CAL,0)>=4  and ISNULL(DAT_SOT_RT1_CAL,0) <6 then 1       
+when ISNULL(DAT_EOT_RT1_CAL,0)>=4 and ISNULL(DAT_EOT_RT1_CAL,0)<6 and ISNULL(DAT_SOT_RT1_CAL,0)>=6 then 1.5      
+when ISNULL(DAT_EOT_RT1_CAL,0)>=6 and ISNULL(DAT_SOT_RT1_CAL,0)>=4 and ISNULL(DAT_SOT_RT1_CAL,0)<6 then 1.5      
+else  0  end AS LEAVE_ERND_ENTITLEMENT,                            
+case                        
+when ISNULL(DAT_EOT_RT1_CAL,0)>=4 and ISNULL(DAT_EOT_RT1_CAL,0)<6 and  ISNULL(DAT_SOT_RT1_CAL,0)<4 then 0.5                          
+when ISNULL(DAT_EOT_RT1_CAL,0)<4 and ISNULL(DAT_SOT_RT1_CAL,0)>=4  and ISNULL(DAT_SOT_RT1_CAL,0)<6 then 0.5      
+when ISNULL(DAT_EOT_RT1_CAL,0)>=4 and ISNULL(DAT_EOT_RT1_CAL,0) <6 and ISNULL(DAT_SOT_RT1_CAL,0)>=4  and ISNULL(DAT_SOT_RT1_CAL,0) <6 then 1       
+when ISNULL(DAT_EOT_RT1_CAL,0)>=4 and ISNULL(DAT_EOT_RT1_CAL,0)<6 and ISNULL(DAT_SOT_RT1_CAL,0)>=6 then 1.5      
+when ISNULL(DAT_EOT_RT1_CAL,0)>=6 and ISNULL(DAT_SOT_RT1_CAL,0)>=4 and ISNULL(DAT_SOT_RT1_CAL,0)<6 then 1.5      
+else  0  end AS LEAVE_ERND_BALANCE,                            
+                            
+0 AS LEAVE_ERND_UTILIZE,                            
+1 AS LEAVE_ERND_ACTIVE                                       
+FROM HS_TA_DAILY_ATTENDANCE                                        
+WHERE SFT_CODE IN  (SELECT SFT_CODE                       
+                   FROM HS_TA_SHIFTDEF                         
+                   WHERE SFT_OFFSHIFT=0)                                                 
+and datediff(d,DAT_INDATE,getdate())<=45                                                  
+AND  DAT_INDATE>='2016-04-01' and              
+not EXISTS (              
+select * From HS_HR_LEAVE_ERND_DETAIL where EMP_NUMBER =HS_TA_DAILY_ATTENDANCE.EMP_NUMBER               
+ and LEAVE_ERND_DATE=HS_TA_DAILY_ATTENDANCE.DAT_INDATE  )                             
+and EMP_NUMBER in (select EMP_NUMBER                         
+                   from HS_HR_LEAVE_ENTITLE                         
+                   where LEV_TYPE_CODE='000004'                                     
+                   and LGY_YEAR_CODE=YEAR(getdate()))                                   
+   ) zz where zz.LEAVE_ERND_ENTITLEMENT>0         
+             
+--                         
+union all              
+              
+select EMP_NUMBER,                        
+YEAR(b.LDB_FROM_DATE) AS LGY_YEAR_CODE,                        
+'000004' AS LEV_TYPE_CODE,                        
+b.LDB_FROM_DATE AS LEAVE_ERND_DATE,b.LDB_DAYS as LEAVE_ERND_ENTITLEMENT ,b.LDB_DAYS as LEAVE_ERND_BALANCE,0 AS LEAVE_ERND_UTILIZE,                            
+1 AS LEAVE_ERND_ACTIVE                
+ From HS_HR_LEAVE_DETAIL a,HS_HR_LDETAIL_BREAKDOWN b where a.LD_APP_ID =b.LD_APP_ID and a.LEV_TYPE_CODE ='000007' and              
+               (  a.WFMAIN_ID is null or a.APP_APPROVED =1) and isnull(a.CANCEL_APPROVED,0) <>1      
+               --days changed from 45 to 150 again change it to 45 after 5th may     
+               and  datediff(d,b.LDB_FROM_DATE,getdate())<=45    
+                and not EXISTS (              
+select * From HS_HR_LEAVE_ERND_DETAIL where EMP_NUMBER =a.EMP_NUMBER               
+ and LEAVE_ERND_DATE=b.LDB_FROM_DATE  ) and EXISTS            
+ (select * From hs_ta_daily_attendance where EMP_NUMBER=a.EMP_NUMBER and             
+ dat_indate=b.LDB_FROM_DATE and sft_code in (SELECT SFT_CODE                       
+                   FROM HS_TA_SHIFTDEF                         
+                   WHERE SFT_OFFSHIFT=1)) AND b.LDB_DAYS >0 )  zz where EXISTS (select * from  HS_HR_LEAVE_ENTITLE where EMP_NUMBER=zz.EMP_NUMBER and              
+ LEV_TYPE_CODE ='000004' and LGY_YEAR_CODE =zz.LGY_YEAR_CODE )              
+ group by EMP_NUMBER,                        
+LGY_YEAR_CODE,                        
+LEV_TYPE_CODE,                        
+LEAVE_ERND_DATE          
+            
+UPDATE HS_HR_LEAVE_ENTITLE                         
+SET LE_ENTITLEMENT =isnull(VW_HS_HR_LEV_COMPOFF.ern,0)+ ISNULL(VW_HS_HR_LEV_COMPOFF.UTILIZED,0)+ isnull(VW_HS_HR_LEV_COMPOFF.PENDING,0),                        
+LE_BAL_BEFORE_APP=isnull(VW_HS_HR_LEV_COMPOFF.ern,0)+isnull(VW_HS_HR_LEV_COMPOFF.PENDING,0)                              
+ ,LE_TYPE_BALANCE=isnull(VW_HS_HR_LEV_COMPOFF.ern,0),                        
+ LE_TYPE_UTILIZED =ISNULL(VW_HS_HR_LEV_COMPOFF.UTILIZED,0),        
+ LE_CALFINISHDT =cast(ltrim(rtrim(VW_HS_HR_LEV_COMPOFF.lgy_year_code+1))+'-12-31' as datetime)                        
+ from  VW_HS_HR_LEV_COMPOFF                         
+ where VW_HS_HR_LEV_COMPOFF.emp_number=HS_HR_LEAVE_ENTITLE.EMP_NUMBER                         
+ and VW_HS_HR_LEV_COMPOFF.lgy_year_code=HS_HR_LEAVE_ENTITLE.lgy_year_code                         
+ and VW_HS_HR_LEV_COMPOFF.lev_type_code=HS_HR_LEAVE_ENTITLE.lev_type_code                      and HS_HR_LEAVE_ENTITLE.lev_type_code in ('000004')                              
+                               
+ end

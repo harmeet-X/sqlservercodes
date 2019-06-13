@@ -1,0 +1,66 @@
+create table #temp(tempid int primary key identity(1,1),AQ_CQ decimal(16,2),Region varchar(50),TotalSite int,DefaultHr int,RatePerHr varchar(10),TotalAmount varchar(10),TStatus varchar(10))
+
+declare @RepUID as int
+set @RepUID=90
+declare @region varchar(20),@type varchar(20),@total decimal(16,2)
+declare findUploadRegion Cursor
+for
+select tr.Region,tt.Type,count(tt.Type) as total from Tbl_RFP_Request tr
+inner join Tbl_targeted tt on tr.Region = tt.Region where tr.RFP_UID = 90 and [type] in ('aq','cq') group by tt.Type,tr.Region
+Open findUploadRegion
+fetch next from findUploadRegion into @region,@type,@total
+while @@FETCH_STATUS=0
+Begin
+
+insert into #temp(AQ_CQ,Region,TotalSite,DefaultHr,RatePerHr,TotalAmount,TStatus)
+
+	select (select cast((select total from total_region_aq_cq where region in (@region) and Type in (@type)) as float)*1.0/ cast((select sum(total) from total_region_aq_cq 
+	where Region in(@region)) as float) * cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = @region) as int)*
+	cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = @RepUID) as int) +
+	(select cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = @RepUID) as int)*
+	(select ed.Data_Scrubing_Effort from Tbl_Effort_details as ed where ed.Region = @region)))/60
+	as AP_AQ  
+	,
+	 tr.Region,count(tr.Region) as totalsite,ted.Default_Hours,'$' + CAST(ted.Region_wise_Rate AS VARCHAR(15)) as Rate_per_Hr,'$' + CAST(((ted.Default_Hours)*(ted.Region_wise_Rate)) as varchar(15)) as Total_Amount,@type from Tbl_RFP_Request tr 
+	inner join Tbl_Effort_details ted on tr.Region = ted.Region where RFP_UID = @RepUID group by tr.Region, ted.Default_Hours, ted.Region_wise_Rate
+
+fetch next from findUploadRegion into @region,@type,@total
+End
+close findUploadRegion
+deallocate findUploadRegion
+
+select * from #temp order by Region asc
+
+
+
+=======================================
+(select count(tt.Type) as total   from Tbl_RFP_Request tr
+inner join Tbl_targeted tt on tr.Region = tt.Region
+where tr.RFP_UID = 123 and tr.region='Emea' and Type='CQ'
+group by tt.Type,tr.Region ) as CQTotal
+======================================
+
+select 
+(select distinct  region from Tbl_RFP_Request where rfp_uid=123 and region='EMEA' )as TRegion,
+(select  count(*)from Tbl_RFP_Request where rfp_uid=123 and region='EMEA' ) as countREgion,
+(select (select cast((select total from total_region_aq_cq where region in ('EMEA') and Type in ('AQ')) as float)*1.0/
+cast((select sum(total) from total_region_aq_cq 
+where Region in('EMEA')) as float) * cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = 'EMEA') as int)*
+cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = 123) as int) +
+(select cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = 123) as int)*
+(select ed.Data_Scrubing_Effort from Tbl_Effort_details as ed where ed.Region = 'EMEA'))) )  as AQ,
+
+(select (select cast((select total from total_region_aq_cq where region in ('EMEA') and Type in ('CQ')) as float)*1.0/
+cast((select sum(total) from total_region_aq_cq 
+where Region in('EMEA')) as float) * cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = 'EMEA') as int)*
+cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = 123) as int) +
+(select cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = 123) as int)*
+(select ed.Data_Scrubing_Effort from Tbl_Effort_details as ed where ed.Region = 'EMEA'))) )  as CQ,
+
+(select cast((select Count(type) as AQCount from Tbl_targeted where Region='Emea' and type='AQ') as float)/cast((select  count(*)from Tbl_targeted where region='EMEA' ) as float) * CAst(( select Count(*) as regioncount from Tbl_RFP_Request where Region='Emea' and RFP_UID = 123) as float)) as AQCount,
+
+(select cast((select Count(type) as AQCount from Tbl_targeted where Region='Emea' and type='CQ') as float)/cast((select  count(*)from Tbl_targeted where region='EMEA' ) as float) * CAst(( select Count(*) as regioncount from Tbl_RFP_Request where Region='Emea' and RFP_UID = 123) as float) )as CQCount
+
+
+
+

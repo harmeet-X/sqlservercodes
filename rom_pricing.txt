@@ -1,0 +1,16 @@
+create procedure Rom_pricing
+
+declare @totalvalue as decimal(16,2)
+declare @price nvarchar(30)
+ select country,MonthlyCharge_Circuit,cast(count(MonthlyCharge_Circuit) as int)as frequency
+ into #Maxfrequency from tbl_transaction where  country='canada' and service='avpn'  group by MonthlyCharge_Circuit,country 
+ --drop table #Maxfrequency
+ select top 1 Max(frequency) as Maxfreq into #frequency from #Maxfrequency 
+
+select maxfreq ,MonthlyCharge_Circuit from #frequency inner join #Maxfrequency on #frequency.Maxfreq=#Maxfrequency.frequency
+
+--where  country='canada' group by MonthlyCharge_Circuit,country
+
+select * from #Maxfrequency
+ drop table #Maxfrequency
+ drop table #frequency

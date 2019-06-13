@@ -1,0 +1,116 @@
+create procedure sp_AQ_CQ_Effort (@RepUID as int)
+as
+begin
+-- if exist drop temp table
+DROP TABLE IF EXISTS #temp
+--create #temp for virtual table 
+create table #temp(tempid int primary key identity(1,1),Region varchar(50),CountRegion int,AQeff decimal(16,2)
+,CQeff decimal(16,2),AQCount decimal(16,2),CQCount decimal(16,2))
+
+--declare @RepUID as int
+--set @RepUID=123
+declare @region varchar(20)
+--declare cursor start
+declare findUploadRegion Cursor
+for
+select distinct Region from Tbl_RFP_Request where RFP_UID=@RepUID--based on region and uid
+Open findUploadRegion
+fetch next from findUploadRegion into @region
+while @@FETCH_STATUS=0
+Begin
+
+insert into #temp(Region,CountRegion,AQeff,CQeff ,AQCount,CQCount )
+select 
+(select distinct  region from Tbl_RFP_Request where rfp_uid=@RepUID and region=@region )as TRegion,
+(select  count(*)from Tbl_RFP_Request where rfp_uid=@RepUID and region=@region ) as countREgion,
+(select (select cast((select total from total_region_aq_cq where region in (@region) and Type in ('AQ')) as float)*1.0/
+cast((select sum(total) from total_region_aq_cq 
+where Region in(@region)) as float) * cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = @region) as int)*
+cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = @RepUID) as int) +
+(select cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = @RepUID) as int)*
+(select ed.Data_Scrubing_Effort from Tbl_Effort_details as ed where ed.Region = @region))) )  as AQ,
+
+(select (select cast((select total from total_region_aq_cq where region in (@region) and Type in ('CQ')) as float)*1.0/
+cast((select sum(total) from total_region_aq_cq 
+where Region in(@region)) as float) * cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = @region) as int)*
+cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = @RepUID) as int) +
+(select cast((select count(*) as upload_rows from Tbl_RFP_Request where RFP_UID = @RepUID) as int)*
+(select ed.Data_Scrubing_Effort from Tbl_Effort_details as ed where ed.Region = @region))) )  as CQ,
+
+(select cast((select Count(type) as AQCount from Tbl_targeted where Region=@region and type='AQ') as float)/cast((select  count(*)from Tbl_targeted where region=@region ) as float) * CAst(( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID) as float)) as AQCount,
+
+(select cast((select Count(type) as AQCount from Tbl_targeted where Region=@region and type='CQ') as float)/cast((select  count(*)from Tbl_targeted where region=@region ) as float) * CAst(( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID) as float) )as CQCount
+
+fetch next from findUploadRegion into @region
+End
+close findUploadRegion
+deallocate findUploadRegion
+
+select * from #temp order by Region asc
+END
+
+
+====================================================
+
+
+
+ALTER  procedure [dbo].[sp_AQ_CQ_Effort] (@RepUID as int)
+as
+begin
+-- if exist drop temp table
+DROP TABLE IF EXISTS #temp
+--create #temp for virtual table 
+create table #temp(tempid int primary key identity(1,1),Region varchar(50),CountRegion int,AQeff decimal(16,2)
+,CQeff decimal(16,2),AQCount decimal(16,2),CQCount decimal(16,2),EffortToal decimal(16,2),MaxDownstream bigint)
+
+--declare @RepUID as int
+--set @RepUID=123
+declare @region varchar(20),@cq decimal(16,2)
+--declare cursor start
+declare findUploadRegion Cursor
+for
+select distinct Region from Tbl_RFP_Request where RFP_UID=@RepUID--based on region and uid
+Open findUploadRegion
+fetch next from findUploadRegion into @region
+while @@FETCH_STATUS=0
+Begin
+set @cq="";
+insert into #temp(Region,CountRegion,AQeff,CQeff ,AQCount,CQCount,EffortToal,MaxDownstream)
+select 
+(select distinct  region from Tbl_RFP_Request where rfp_uid=@RepUID and region=@region )as TRegion,
+(select  count(*)from Tbl_RFP_Request where rfp_uid=@RepUID and region=@region ) as countREgion,
+
+(select(( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID)*(select Data_Scrubing_Effort from Tbl_Effort_details where Region = @region))
++
+(cast((select Count(type) as AQCount from Tbl_targeted where Region=@region and type='AQ') as float)/cast((select  count(*)from Tbl_targeted where region=@region ) as float))
+* ( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID)* (cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = @region) as int)))as AQ,
+
+(select(( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID)*(select Data_Scrubing_Effort from Tbl_Effort_details where Region = @region))
++
+(cast((select Count(type) as AQCount from Tbl_targeted where Region=@region and type='CQ') as float)/cast((select  count(*)from Tbl_targeted where region=@region ) as float))
+* ( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID)* (cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = @region) as int)))as CQ,
+
+(select cast((select Count(type) as AQCount from Tbl_targeted where Region=@region and type='AQ') as float)/cast((select  count(*)from Tbl_targeted where region=@region ) as float) * CAst(( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID) as float)) as AQCount,
+
+(select cast((select Count(type) as AQCount from Tbl_targeted where Region=@region and type='CQ') as float)/cast((select  count(*)from Tbl_targeted where region=@region ) as float) * CAst(( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID) as float) )as CQCount,
+
+(((select(( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID)*(select Data_Scrubing_Effort from Tbl_Effort_details where Region = @region))
++
+(cast((select Count(type) as AQCount from Tbl_targeted where Region=@region and type='AQ') as float)/cast((select  count(*)from Tbl_targeted where region=@region ) as float))
+* ( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID)* (cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = @region) as int)))) +
+(select(( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID)*(select Data_Scrubing_Effort from Tbl_Effort_details where Region = @region))
++
+(cast((select Count(type) as AQCount from Tbl_targeted where Region=@region and type='CQ') as float)/cast((select  count(*)from Tbl_targeted where region=@region ) as float))
+* ( select Count(*) as regioncount from Tbl_RFP_Request where Region=@region and RFP_UID = @RepUID)* (cast ((select ed.AQ_Effort_in_Mins from Tbl_Effort_details as ed where ed.Region = @region) as int)))) as TotalCOE
+
+ 
+
+fetch next from findUploadRegion into @region
+End
+close findUploadRegion
+deallocate findUploadRegion
+
+select * from #temp order by Region asc
+END
+
+

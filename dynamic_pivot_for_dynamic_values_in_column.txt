@@ -1,0 +1,36 @@
+CREATE proc sp_BU_availability (@mgr_uid NVARCHAR(MAX),@year nvarchar(max),@month nvarchar(max)  
+) as   
+begin  
+--declare @mgr_uid NVARCHAR(MAX),@year NVARCHAR(MAX),@month NVARCHAR(MAX)  
+--exec sp_bu_availability 'D04C8EF1-0BE7-E811-A95D-000D3AF01967','2018-11-01'  
+ --set @mgr_uid='D04C8EF1-0BE7-E811-A95D-000D3AF01967'  
+ --set @year=2018-11-01   
+ ----set @month=11  
+DECLARE @cols AS NVARCHAR(MAX),  
+    @query  AS NVARCHAR(MAX)  
+SELECT distinct res_name,datewise,capacity,RES_TIMESHEET_MGR_UID into #q   
+FROM abc where RES_TIMESHEET_MGR_UID=@mgr_uid and year(datewise)=@year and month(datewise)=@month  
+SET @cols = STUFF((SELECT distinct ',' + QUOTENAME(convert(nvarchar,datewise,23)) FROm #q FOR XML PATH(''),  
+TYPE  ).value('.', 'NVARCHAR(MAX)') ,1,1,'')  
+--print @cols  
+set @query = 'SELECT  res_name,' + @cols + ' from  
+            (  
+                select *  
+                from #q   
+           ) x  
+            pivot   
+            (  
+                 max(capacity)  
+                for [datewise] in (' + @cols + ')  
+            ) p '  
+   --print @query     
+     
+execute( @query)  
+drop table #q  
+end  
+  
+  
+  
+  
+  
+--drop table #q  

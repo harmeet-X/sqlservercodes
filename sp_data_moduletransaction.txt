@@ -1,0 +1,176 @@
+
+    
+      
+alter proc [dbo].[data_Moduletransaction](@RFP_UID as int,@ssm bigint)      
+as      
+      
+select distinct Region,type,convert(bigint,null) as effortsinminutes,2 as Data_Scrubing_Effort into #regionandtype from Tbl_targeted       
+where --region='AP'      
+--and       
+type<>'OAPI'      
+      
+update rt set effortsinminutes=r_mins from #regionandtype rt      
+inner join Tbl_Effort_details ed on ed.region=rt.region and ed.type=rt.type      
+      
+select rt.region,rt.type,effortsinminutes,Data_Scrubing_Effort,count(t.type) as typecount into #regionandtypewisecount from #regionandtype rt      
+inner join Tbl_targeted t on t.region=rt.region and t.type=rt.type       
+group by rt.region,rt.type,effortsinminutes,Data_Scrubing_Effort      
+      
+      
+select  t.region, count(t.region) as regioncount into #regioncountTarget from Tbl_targeted t where type<>'OAPI'      
+--inner join #regionandtype rt on rt.region=t.region       
+group by t.region      
+      
+      
+select  t.region, count(t.region) as regioncount into #regioncountrequest from Tbl_RFP_Request t where RFP_UID =@RFP_UID      
+-- type<>'OAPI'      
+--inner join #regionandtype rt on rt.region=t.region       
+group by t.region      
+      
+      
+select rtc.region,rtc.type,rtc.effortsinminutes,rtc.Data_Scrubing_Effort,(convert(decimal(18,2),typecount)/convert(decimal(18,2),regioncount)) as prob       
+into #probRegionType      
+from  #regionandtypewisecount rtc      
+inner join #regioncountTarget rct on rct.region=rtc.region      
+      
+      
+select prt.region,prt.type,prt.effortsinminutes,prt.Data_Scrubing_Effort,prt.prob,regioncount,(prt.prob*regioncount) as probregioncountmultiply      
+into  #probregioncountmultiply from #probRegionType prt      
+inner join #regioncountrequest rr on rr.region=prt.region      
+--group by prt.region,prt.type,prt.effortsinminutes,prt.Data_Scrubing_Effort,prt.prob      
+      
+    
+      
+select distinct region,Data_Scrubing_Effort,regioncount,(Data_Scrubing_Effort*regioncount) as datascrub into #datascrub from #probregioncountmultiply      
+      
+      
+select  region,type,effortsinminutes,Data_Scrubing_Effort,regioncount,sum(probregioncountmultiply) as typecountRegionwise into #typecountRegionwise  from #probregioncountmultiply      
+group by region,effortsinminutes,Data_Scrubing_Effort,regioncount,type      
+      
+--select * from #typecountRegionwise      
+      
+select region,type,effortsinminutes,Data_Scrubing_Effort,regioncount,typecountRegionwise, (typecountRegionwise*effortsinminutes)       
+as typewiseeffortsinmin      
+into #typewiseeffortsinmin from #typecountRegionwise      
+      
+--select * from #typewiseeffortsinmin      
+      
+select region,type,typewiseeffortsinmin +(Data_Scrubing_Effort*regioncount) as AQCount into #totalregionwiseplusdatascrub from #typewiseeffortsinmin where type='AQ'      
+      
+--select AQCount from #totalregionwiseplusdatascrub       
+--select AQCount from #typewiseeffortsinmin inner join #totalregionwiseplusdatascrub on #totalregionwiseplusdatascrub.Region=#typewiseeffortsinmin.Region and #totalregionwiseplusdatascrub.Type=      
+--#typewiseeffortsinmin.Type      
+      
+update #typewiseeffortsinmin set typewiseeffortsinmin=AQCount from #typewiseeffortsinmin inner join #totalregionwiseplusdatascrub on #totalregionwiseplusdatascrub.Region=#typewiseeffortsinmin.Region and #totalregionwiseplusdatascrub.Type=      
+#typewiseeffortsinmin.Type      
+      
+--select * from #typewiseeffortsinmin      
+ select region,sum(typewiseeffortsinmin) as totalregionwiseefforts into #totalregionwiseefforts from #typewiseeffortsinmin group by region      
+      
+ --select * from #totalregionwiseefforts      
+ --select * from #totalregionwiseefforts --total coe      
+       
+ select tm.region,(totalregionwiseefforts/60) inmins into #inmins from #totalregionwiseefforts tm      
+ inner join #datascrub ds on ds.region=tm.region      
+      
+ --select * from #inmins      
+       
+create table #tempRecord(Region varchar(50),Type varchar(20),Aq_CQCount bigint,AQ_CQ_Total bigint,effortAQ_CQ bigint,effortAQ_CQTotal bigint,maxdownstream bigint)      
+      
+insert into #tempRecord (Region,Type,AQ_CQ_Total) select region,type,typecount from #regionandtypewisecount --where region='AP'      
+      
+--update #tempRecord set Aq_CQCount =regioncount from #regioncountrequest where #regioncountrequest.region='AP'      
+      
+update t set Aq_CQCount =regioncount from #tempRecord t      
+inner join #regioncountrequest rt on rt.region=t.region --and rt.type=t.type      
+      
+      
+Update #tempRecord set AQ_CQ_Total= Round(typecountRegionwise,-0) from #typewiseeffortsinmin      
+ tm inner join #tempRecord tr on tr.region=tm.region and tm.type=tr.type      
+      
+Update #tempRecord set effortAQ_CQ= round(typewiseeffortsinmin,-0) from #typewiseeffortsinmin      
+ tm inner join #tempRecord tr on tr.region=tm.region and tm.type=tr.type      
+      
+update #tempRecord set effortAQ_CQTotal= inmins from #inmins inner join #tempRecord on #inmins.region=#tempRecord.region      
+      
+      
+Update #tempRecord set maxdownstream=Time from [dbo].[Max_downstream_time] mdt inner join #tempRecord tr on tr.Region=mdt.Region and tr.Type=mdt.type    
+    
+    
+--drop table #RateCardAQ_CQ      
+create table #RateCardAQ_CQ      
+(      
+ Region varchar(50),AQ bigint,CQ bigint,TotalSites bigint,AQefforts bigint,CQefforts bigint,TotalCOEefforts bigint,MaxDownstream bigint,TotalINDays decimal(18,2),Dscub  int      
+)      
+      
+insert into #RateCardAQ_CQ(region)      
+select distinct region from #tempRecord      
+      
+update rc set rc.AQ=AQ_CQ_Total from #RateCardAQ_CQ rc      
+inner join #tempRecord t on t.region=rc.region      
+where type='AQ'      
+      
+      
+update rc set rc.CQ=AQ_CQ_Total,TotalSites=AQ_CQCount from #RateCardAQ_CQ rc      
+inner join #tempRecord t on t.region=rc.region      
+where type='CQ'      
+      
+update rc set rc.AQefforts=effortAQ_CQ,TotalCOEefforts=effortAQ_CQTotal from #RateCardAQ_CQ rc      
+inner join #tempRecord t on t.region=rc.region      
+where type='AQ'      
+      
+update rc set rc.CQefforts=effortAQ_CQ from #RateCardAQ_CQ rc      
+inner join #tempRecord t on t.region=rc.region      
+where type='CQ'      
+      
+update #RateCardAQ_CQ set MaxDownstream=Time from [dbo].[Max_downstream_time] mdt inner join #RateCardAQ_CQ tr on tr.Region=mdt.Region       
+      
+      
+      
+      
+      
+select distinct rc.*,convert(bigint,null) as totalcoeffortssum,convert(bigint,null) as MAxDownstreamvalue into #totalcoeffortssum from #RateCardAQ_CQ rc      
+inner join Tbl_RFP_Request rt on rt.region=rc.region where rt.rfP_UID=@RFP_UID      
+      
+      
+      
+update t1 set totalcoeffortssum=( SELECT  SUM(TotalCOEefforts) sumPrice      
+        FROM #totalcoeffortssum) from #totalcoeffortssum t1      
+--inner join #totalcoeffortssum t2 on t1.region=t2.region      
+      
+update t1 set MAxDownstreamvalue=(select MAX(MaxDownstream) MaxVAlue from #totalcoeffortssum ) from #totalcoeffortssum t1      
+      
+      
+update #totalcoeffortssum set TotalINDays=CEILING(((Convert(decimal(18,2),totalcoeffortssum)/Convert(decimal(18,2),(@ssm*8)))+Convert(decimal(18,2),MAxDownstreamvalue)))      
+      
+--select * from #totalcoeffortssum      
+      
+      
+insert into tbl_uploadRFPProcess(Region,AQ ,CQ ,TotalSites ,AQefforts ,CQefforts ,TotalCOEefforts ,MaxDownstream ,TotalINDays,RFP_UID )      
+select ts.Region       
+,ts.AQ       
+,ts.CQ       
+,ts.TotalSites       
+,ts.AQefforts       
+,ts.CQefforts       
+,ts.TotalCOEefforts       
+,case when ts.CQ=0 then 0 else  ts.MaxDownstream end as MaxDownstream      
+,Cast((ts.TotalINDays) as int) as TotalINDays,@RFP_UID       
+from #totalcoeffortssum ts inner join #RateCardAQ_CQ racq on ts.Region=racq.Region      
+       
+--select * from tbl_uploadRFPProcess      
+      
+drop table #regionandtype      
+drop table #regioncountTarget      
+drop table #regioncountrequest      
+drop table #regionandtypewisecount      
+drop table #probRegionType      
+drop table #probregioncountmultiply      
+drop table #typecountRegionwise      
+drop table #datascrub      
+drop table #typewiseeffortsinmin      
+drop table #totalregionwiseefforts      
+drop table #tempRecord      
+drop table #RateCardAQ_CQ      
+drop table #inmins      
+drop table #totalcoeffortssum 
